@@ -4,4 +4,4 @@
 *.gradle
 *.zip
 *.7z
-*containers/*cache
+/LR2-2/containers/tomcat-cache/
