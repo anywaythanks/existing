@@ -1,21 +1,27 @@
 package repositories;
 
+import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
+import java.io.PrintWriter;
+import java.util.Properties;
 
 public class DataSourceFactory {
-   DataSource dataSource;
+   private DataSource dataSource;
 
    public DataSourceFactory() {
-      var dataSource = new HikariDataSource();
-      dataSource.setDriverClassName("com.postgresql.Driver");
-      dataSource.setJdbcUrl("jdbc:postgresql://localhost:5432/applec");
-      dataSource.setUsername("anyway");
-      this.dataSource = dataSource;
+      Properties props = new Properties();
+
+      props.setProperty("dataSourceClassName", "org.postgresql.ds.PGSimpleDataSource");
+      props.setProperty("dataSource.user", "anyway");
+      props.setProperty("dataSource.databaseName", "applec");
+
+      HikariConfig config = new HikariConfig(props);
+      this.dataSource = new HikariDataSource(config);
    }
 
-   private DataSource dataSource() {
+   public DataSource dataSource() {
       return dataSource;
    }
 }

@@ -1,10 +1,7 @@
 package repositories;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class JdbcTemplate<T> {
    private final DataSource dataSource;
@@ -65,8 +62,7 @@ public class JdbcTemplate<T> {
    }
 
    public T run(String query, T updateObject, BiConsumer<? super T, ? super PreparedStatement> mapper) {
-      try {
-         var c = dataSource.getConnection();
+      try (var c = dataSource.getConnection()){
          return run(c, query, updateObject, mapper);
       } catch (SQLException e) {
          throw new RuntimeException(e);
@@ -74,8 +70,7 @@ public class JdbcTemplate<T> {
    }
 
    public T select(String query, Consumer<? super PreparedStatement> selectValues, Function<? super ResultSet, ? extends T> mapper) {
-      try {
-         var c = dataSource.getConnection();
+      try (var c = dataSource.getConnection()){
          return select(c, query, selectValues, mapper);
       } catch (SQLException e) {
          throw new RuntimeException(e);
@@ -83,9 +78,12 @@ public class JdbcTemplate<T> {
    }
 
    public T insert(Connection c, String query, T insertObject) {
-      try (var call = c.prepareCall("nextval('%s'::regclass)".formatted(seqName));
+      try (var call = c.prepareCall("{call nextval(?::regclass)}");
            var ps = c.prepareStatement(query)) {
-         long id = call.executeQuery().getLong(0);
+         call.setString(1, seqName);
+         call.registerOutParameter(1, -5);
+         call.execute();
+         long id = call.getLong(1);
          insertAction.accept(id, insertObject, ps);
          return ps.executeUpdate() > 0 ? insertObject : null;
       } catch (SQLException e) {
@@ -107,15 +105,15 @@ public class JdbcTemplate<T> {
                    Function<? super ResultSet, ? extends T> mapper) {
       try (var ps = c.prepareStatement(query)) {
          selectValues.accept(ps);
-         return mapper.apply(ps.executeQuery());
+         var rs = ps.executeQuery();
+         return rs.next() ? mapper.apply(rs) : null;
       } catch (SQLException e) {
          throw new RuntimeException(e);
       }
    }
 
    public <V> V exec(Function<Connection, ? extends V> action) {
-      try {
-         var c = dataSource.getConnection();
+      try(var c = dataSource.getConnection()) {
          return action.apply(c);
       } catch (SQLException e) {
          throw new RuntimeException(e);
