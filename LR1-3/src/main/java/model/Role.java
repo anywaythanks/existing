@@ -1,4 +1,4 @@
-package DB.entities;
+package model;
 
 public enum Role {
    SALESMAN, BUYER;

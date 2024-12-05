@@ -1,4 +1,4 @@
-package DB;
+package repositories;
 
 import com.zaxxer.hikari.HikariDataSource;
 

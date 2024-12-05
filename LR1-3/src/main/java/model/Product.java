@@ -1,4 +1,4 @@
-package DB.entities;
+package model;
 
 import java.math.BigDecimal;
 

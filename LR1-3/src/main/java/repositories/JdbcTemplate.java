@@ -1,11 +1,10 @@
-package DB;
+package repositories;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.function.Supplier;
 
 public class JdbcTemplate<T> {
    private final DataSource dataSource;

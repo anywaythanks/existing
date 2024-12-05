@@ -1,7 +1,7 @@
-package DB;
+package repositories;
 
-import DB.entities.Account;
-import DB.entities.Role;
+import model.Account;
+import model.Role;
 
 import javax.sql.DataSource;
 

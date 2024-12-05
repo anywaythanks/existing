@@ -1,6 +1,6 @@
-package DB;
+package repositories;
 
-import DB.entities.Account;
+import model.Account;
 
 public interface AccountRepository {
    Account save(Account account);

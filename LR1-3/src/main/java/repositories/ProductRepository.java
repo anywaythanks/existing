@@ -1,9 +1,6 @@
-package DB;
+package repositories;
 
-import DB.entities.Account;
-import DB.entities.Product;
-
-import javax.sql.DataSource;
+import model.Product;
 
 public interface ProductRepository {
    Product save(Product account);
