@@ -2,3 +2,5 @@
 */target/*
 *.mvn
 *.gradle
+*.zip
+*.7z
