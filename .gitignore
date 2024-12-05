@@ -4,3 +4,4 @@
 *.gradle
 *.zip
 *.7z
+*containers/*cache

@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:9.5
+    container_name: legacy_db
+    environment:
+      POSTGRES_DB: "applec"
+      POSTGRES_USER: "anyway"
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+  tomcat:
+    image: bitnami/tomcat:latest
+    environment:
+      - TOMCAT_USERNAME=root
+      - TOMCAT_PASSWORD=password
+    links:
+      - postgres:postgres
+    ports:
+      - 8585:8080
+    volumes:
+      - ./tomcat-cache:/bitnami/tomcat
