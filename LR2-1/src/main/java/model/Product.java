@@ -19,4 +19,17 @@ public class Product {
       this.cost = cost;
       quantity = 0;
    }
+
+   @Override
+   public String toString() {
+      return "Product{" +
+              "id=" + id +
+              ", name='" + name + '\'' +
+              ", account=" + account +
+              ", visibleName='" + visibleName + '\'' +
+              ", description='" + description + '\'' +
+              ", cost=" + cost +
+              ", quantity=" + quantity +
+              '}';
+   }
 }

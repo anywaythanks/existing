@@ -2,26 +2,27 @@ package repositories;
 
 import model.Account;
 import model.Role;
-import org.apache.log4j.Level;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import static org.apache.log4j.BasicConfigurator.configure;
-import static org.apache.log4j.Logger.getRootLogger;
 import static org.junit.Assert.*;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration("classpath:applicationContext.xml")
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AccountRepositoryTest {
-   static AccountRepository repo;
+   @Autowired
+   AccountRepository repo;
    static Account account1;
 
    @BeforeClass
    public static void setUp() {
-      configure();
-      getRootLogger().setLevel(Level.INFO);
-      repo = new AccountRepositoryJdbc(new DataSourceFactory().dataSource());
       account1 = new Account("test", "test", Role.SALESMAN);
    }
 
@@ -31,6 +32,7 @@ public class AccountRepositoryTest {
       assertEquals(account1.role, account2.role);
       assertEquals(account1.amount, account2.amount);
    }
+
    @Test
    public void _1_nullFind() {
       assertNull(repo.findByName(account1.name));

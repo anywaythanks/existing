@@ -15,4 +15,15 @@ public class Account {
       this.role = role;
       amount = BigDecimal.ZERO;
    }
+
+   @Override
+   public String toString() {
+      return "Account{" +
+              "id=" + id +
+              ", name='" + name + '\'' +
+              ", passwd='" + passwd + '\'' +
+              ", role=" + role +
+              ", amount=" + amount +
+              '}';
+   }
 }

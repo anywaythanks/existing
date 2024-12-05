@@ -3,34 +3,32 @@ package repositories;
 import model.Account;
 import model.Product;
 import model.Role;
-import org.apache.log4j.Level;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.math.BigDecimal;
 
-import static org.apache.log4j.BasicConfigurator.configure;
-import static org.apache.log4j.Logger.getRootLogger;
 import static org.junit.Assert.*;
 
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration("classpath:applicationContext.xml")
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ProductRepositoryTest {
-   static ProductRepository repo;
-   static AccountRepository accRepo;
+   @Autowired
+   ProductRepository repo;
+   @Autowired
+   AccountRepository accRepo;
    static Account account1;
    static Product product1;
 
    @BeforeClass
    public static void setUp() {
-      configure();
-      getRootLogger().setLevel(Level.INFO);
-      var ds = new DataSourceFactory().dataSource();
-      var accRepo = new AccountRepositoryJdbc(ds);
-      repo = new ProductRepositoryJdbc(ds, accRepo);
-      ProductRepositoryTest.accRepo = accRepo;
       account1 = new Account("test2", "test2", Role.SALESMAN);
       product1 = new Product("test", account1, "visName", "descr", new BigDecimal("10.00"));
    }
@@ -46,6 +44,9 @@ public class ProductRepositoryTest {
 
    @Test
    public void _1_nullFind() {
+      var find = accRepo.findByName(account1.name);
+      if (find != null) accRepo.delete(find);
+      assertNull(accRepo.findByName(account1.name));
       assertNull(repo.findByName(product1.name));
    }
 
@@ -81,11 +82,5 @@ public class ProductRepositoryTest {
       repo.delete(find);
       find = repo.findByName(product1.name);
       assertNull(find);
-   }
-
-   @AfterClass
-   public static void clearUp() {
-      var find = accRepo.findByName(account1.name);
-      accRepo.delete(find);
    }
 }

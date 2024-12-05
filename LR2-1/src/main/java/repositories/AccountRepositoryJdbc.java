@@ -2,9 +2,11 @@ package repositories;
 
 import model.Account;
 import model.Role;
+import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
 
+@Repository
 public class AccountRepositoryJdbc implements AccountRepository {
    protected final JdbcTemplate<Account> jdbcTemplate;
 
