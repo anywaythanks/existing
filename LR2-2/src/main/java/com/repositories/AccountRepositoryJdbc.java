@@ -4,14 +4,14 @@ import com.model.Account;
 import com.model.Role;
 import org.springframework.stereotype.Repository;
 
-import javax.sql.DataSource;
+import java.util.Objects;
 
 @Repository
 public class AccountRepositoryJdbc implements AccountRepository {
    protected final JdbcTemplate<Account> jdbcTemplate;
 
-   public AccountRepositoryJdbc(DataSource dataSource) {
-      this.jdbcTemplate = new JdbcTemplate<>(dataSource, (account, preparedStatement) -> {
+   public AccountRepositoryJdbc() {
+      this.jdbcTemplate = new JdbcTemplate<>((account, preparedStatement) -> {
          preparedStatement.setString(1, account.name);
          preparedStatement.setString(2, account.passwd);
          preparedStatement.setBigDecimal(3, account.amount);
@@ -29,27 +29,28 @@ public class AccountRepositoryJdbc implements AccountRepository {
          var passwd = resultSet.getString("password");
          var role = resultSet.getString("role");
          var acc = new Account(name, passwd, Role.valueOf(role.toUpperCase()));
+         acc.amount = resultSet.getBigDecimal("amount");
          acc.id = resultSet.getLong("id");
          return acc;
       }, "account_seq");
    }
 
-   public Account save(Account account) {
-      if (account.id == null) {
+   public ContextJdbc<Account> save(Account account) {
+      if(account.id == null) {
          return jdbcTemplate.insert("INSERT INTO accounts (id, name, password, role, amount) VALUES (?, ?, ?, ?, ?)", account);
       }
       return jdbcTemplate.run("update accounts set name=?, password=?, amount=? where id=?", account);
    }
 
-   public boolean delete(Account account) {
-      return jdbcTemplate.run("delete from accounts where id=?", account, (a, p) -> p.setLong(1, a.id)) != null;
+   public ContextJdbc<Boolean> delete(Account account) {
+      return jdbcTemplate.run("delete from accounts where id=?", account, (a, p) -> p.setLong(1, a.id)).map(Objects::nonNull);
    }
 
-   public Account findByName(String name) {
-      return jdbcTemplate.select("select * from accounts where name=?", ps -> ps.setString(1, name));
+   public ContextJdbc<Account> findByName(String name) {
+      return jdbcTemplate.selectOne("select * from accounts where name=?", ps -> ps.setString(1, name));
    }
 
-   public Account findById(long id) {
-      return jdbcTemplate.select("select * from accounts where id=?", ps -> ps.setLong(1, id));
+   public ContextJdbc<Account> findById(long id) {
+      return jdbcTemplate.selectOne("select * from accounts where id=?", ps -> ps.setLong(1, id));
    }
 }

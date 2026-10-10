@@ -2,12 +2,17 @@ package com.repositories;
 
 import com.model.Product;
 
+import java.util.List;
+
 public interface ProductRepository {
-   Product save(Product account);
+   ContextJdbc<Product> save(Product account);
 
-   boolean delete(Product product);
+   ContextJdbc<Boolean> delete(Product product);
 
-   Product findByName(String name);
+   ContextJdbc<Product> findByName(String name);
 
-   Product findById(long id);
+   ContextJdbc<Product> findById(long id);
+
+   ContextJdbc<List<Product>> list(int offset, int limit);
+   ContextJdbc<List<Product>> list(int offset, int limit, long accountId);
 }

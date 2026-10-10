@@ -25,7 +25,7 @@ create table products
     id           int                not null default nextval('products_seq'::regclass),
     name         varchar(64) unique not null,
     account_id   int                not null references accounts,
-    visible_name varchar(64)        not null,
+    visible_name text        not null,
     description  text               not null,
     cost         numeric(10, 2)     not null check ( cost >= 0),
     quantity     int                not null check (quantity >= 0),
@@ -43,6 +43,7 @@ create table purchases
     cost       numeric(10, 2) not null check (cost >= 0),
     primary key (id)
 );
+
 CREATE FUNCTION defaulter()
     RETURNS trigger AS
     $$

@@ -3,11 +3,11 @@ package com.repositories;
 import com.model.Account;
 
 public interface AccountRepository {
-   Account save(Account account);
+   ContextJdbc<Account> save(Account account);
 
-   boolean delete(Account account);
+   ContextJdbc<Boolean> delete(Account account);
 
-   Account findByName(String name);
+   ContextJdbc<Account> findByName(String name);
 
-   Account findById(long id);
+   ContextJdbc<Account> findById(long id);
 }

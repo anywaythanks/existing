@@ -1,40 +1,40 @@
 package com.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.repositories.AccountRepository;
+import com.repositories.ContextRunner;
+import com.services.UserService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import com.repositories.UserRepository;
-import com.services.UserService;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-    private UserRepository repository;
+   private final AccountRepository repository;
+   private final ContextRunner contextRunner;
 
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(new UserService(repository));
-    }
+   public SecurityConfig(AccountRepository repository, ContextRunner contextRunner) {
+      this.repository = repository;
+      this.contextRunner = contextRunner;
+   }
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-                .antMatchers("/", "/homepage", "/messages", "/register").permitAll()
-                .antMatchers("/{login}")
-                .access("isAuthenticated() and principal.username == #login")
-                .anyRequest().authenticated()
-                .and().formLogin().loginPage("/login").permitAll()
-                .and().httpBasic().realmName("Simple")
-                .and().requiresChannel().antMatchers("/register").requiresSecure()
-                .and().rememberMe().tokenValiditySeconds(2419200).key("remember-me")
-                .and().logout().logoutSuccessUrl("/").logoutUrl("/signout");
-    }
+   @Override
+   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+      auth.userDetailsService(new UserService(repository, contextRunner));
+   }
 
-    @Autowired
-    public void setRepository(UserRepository repository) {
-        this.repository = repository;
-    }
+   @Override
+   protected void configure(HttpSecurity http) throws Exception {
+      http.authorizeRequests()
+              .antMatchers("/", "/homepage", "/messages", "/register", "/login").permitAll()
+              .antMatchers("/profile/{name}").access("isAuthenticated() and principal.username == #name")
+              .anyRequest().authenticated()
+              .and().formLogin().loginPage("/login").permitAll()
+              .and().httpBasic().realmName("Simple")
+              .and().rememberMe().tokenValiditySeconds(2419200).key("remember-me")
+              .and().logout().logoutSuccessUrl("/").logoutUrl("/signout")
+              .and().csrf().disable();
+   }
 }

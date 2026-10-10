@@ -1,25 +1,29 @@
 package com.config.data;
 
-import org.apache.commons.dbcp.BasicDataSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
-import org.springframework.jndi.JndiObjectFactoryBean;
 
 import javax.sql.DataSource;
 
 @Configuration
-@PropertySource("classpath:application.properties")
 public class DataSourceConfig {
-    @Bean
-    public DataSource dataSource() {
-        JndiObjectFactoryBean jndiObjectFactoryBean = new JndiObjectFactoryBean();
-        jndiObjectFactoryBean.setJndiName("jdbc/applec");
-        jndiObjectFactoryBean.setResourceRef(true);
-        jndiObjectFactoryBean.setProxyInterface(DataSource.class);
-        return (DataSource) jndiObjectFactoryBean.getObject();
-    }
+   @Bean
+   public DataSource dataSource() {
+      HikariConfig config = new HikariConfig();
+
+      config.setDriverClassName("org.postgresql.Driver");
+      config.setJdbcUrl("jdbc:postgresql://postgres:5432/applec?charSet=UTF-8");
+      config.setUsername("anyway");
+      config.setPassword("anyway");
+
+      config.setMaximumPoolSize(15);
+      config.setMinimumIdle(5);
+      config.setIdleTimeout(300000);
+      config.setConnectionTimeout(20000);
+      config.setPoolName("MyCustomHikariPool");
+
+      return new HikariDataSource(config);
+   }
 }

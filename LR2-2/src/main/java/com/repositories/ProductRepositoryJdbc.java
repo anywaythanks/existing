@@ -5,14 +5,15 @@ import com.model.Product;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
+import java.util.List;
+import java.util.Objects;
 
 @Repository
 public class ProductRepositoryJdbc implements ProductRepository {
    protected final JdbcTemplate<Product> jdbcTemplate;
 
-   public ProductRepositoryJdbc(DataSource dataSource, AccountRepositoryJdbc accountRepositoryJdbc) {
-      var aj = accountRepositoryJdbc.jdbcTemplate;
-      this.jdbcTemplate = new JdbcTemplate<>(dataSource, (product, preparedStatement) -> {
+   public ProductRepositoryJdbc(AccountRepositoryJdbc accountRepositoryJdbc) {
+      this.jdbcTemplate = new JdbcTemplate<>((product, preparedStatement) -> {
          preparedStatement.setString(1, product.name);
          preparedStatement.setString(2, product.visibleName);
          preparedStatement.setString(3, product.description);
@@ -35,34 +36,50 @@ public class ProductRepositoryJdbc implements ProductRepository {
          var description = resultSet.getString("description");
          var cost = resultSet.getBigDecimal("cost");
          var quantity = resultSet.getInt("quantity");
-         var accountId = resultSet.getInt("account_id");
-
-         Account account = aj.select("select * from accounts where id=?", ps -> ps.setLong(1, accountId));
+         var accountId = resultSet.getLong("account_id");
 
          var product = new Product(name, null, visibleName, description, cost);
          product.quantity = quantity;
-         product.account = account;
+         product.account = new Account();
+         product.account.id = accountId;
          product.id = resultSet.getLong("id");
          return product;
       }, "account_seq");
    }
 
-   public Product save(Product account) {
-      if (account.id == null) {
+   public ContextJdbc<Product> save(Product account) {
+      if(account.id == null) {
          return jdbcTemplate.insert("INSERT INTO products (id, name, visible_name, description, cost, quantity, account_id) VALUES (?, ?, ?, ?, ?, ?, ?)", account);
       }
       return jdbcTemplate.run("update products set name=?, visible_name=?, description=?, cost=?, quantity=? where id=?", account);
    }
 
-   public boolean delete(Product product) {
-      return jdbcTemplate.run("delete from products where id=?", product, (a, p) -> p.setLong(1, a.id)) != null;
+   public ContextJdbc<Boolean> delete(Product product) {
+      return jdbcTemplate.run("delete from products where id=?", product, (a, p) -> p.setLong(1, a.id)).map(Objects::nonNull);
    }
 
-   public Product findByName(String name) {
-      return jdbcTemplate.select("select * from products where name=?", ps -> ps.setString(1, name));
+   public ContextJdbc<Product> findByName(String name) {
+      return jdbcTemplate.selectOne("select * from products where name=?", ps -> ps.setString(1, name));
    }
 
-   public Product findById(long id) {
-      return jdbcTemplate.select("select * from products where id=?", ps -> ps.setLong(1, id));
+   public ContextJdbc<Product> findById(long id) {
+      return jdbcTemplate.selectOne("select * from products where id=?", ps -> ps.setLong(1, id));
+   }
+
+   @Override
+   public ContextJdbc<List<Product>> list(int offset, int limit) {
+      return jdbcTemplate.select("select * from products limit ? offset ?", ps -> {
+         ps.setInt(1, limit);
+         ps.setInt(2, offset);
+      });
+   }
+
+   @Override
+   public ContextJdbc<List<Product>> list(int offset, int limit, long accountId) {
+      return jdbcTemplate.select("select * from products where account_id = ? limit ? offset ? ", ps -> {
+         ps.setLong(1, accountId);
+         ps.setInt(2, limit);
+         ps.setInt(3, offset);
+      });
    }
 }

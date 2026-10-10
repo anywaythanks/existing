@@ -5,19 +5,30 @@ services:
     environment:
       POSTGRES_DB: "applec"
       POSTGRES_USER: "anyway"
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_PASSWORD: "anyway"
     volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   tomcat:
-    image: bitnami/tomcat:latest
+    image: tomcat:9.0-jdk17
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       - TOMCAT_USERNAME=root
       - TOMCAT_PASSWORD=password
-    links:
-      - postgres:postgres
+      - CATALINA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     ports:
-      - 8585:8080
+      - "8585:8080"
+      - "5005:5005"
     volumes:
-      - ./tomcat-cache:/bitnami/tomcat
+      - ./tomcat-cache:/usr/local/tomcat/webapps
+      - ./logs:/usr/local/tomcat/logs

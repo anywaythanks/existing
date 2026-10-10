@@ -1,10 +1,22 @@
 package com.repositories;
 
-import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
+import static java.sql.Types.BIGINT;
+
+/*
+ * В изначальных версиях был изъян - невозможность сделать красиво транзакции. В оригинальном темплейете это реализовано через AOP и тем фактом, что jdbcTemplate существует в единственном экземпляре. Мы поступим иначе, погружая иные вызовы в контекст, который разрешит кто-то наверху.
+ * Таким образом контекст будет тянуться ровно до того момента, пока кому-то не понадобится транзакция и все будет связано одним коннектом. В этом случае dataSource нам более не нужен.
+ * Целью не является сделать какие-то сложные вещи типа неблокирующих операций.
+ * Цель остается той же - это просто обертка над jdbc, ни больше ни меньше. Мы не будем заменять sql своим языком, не будем на лету его генерировать. Все отдается на откуп jdbc. Мы просто убираем повторяющиеся бойлерплейтные элементы.
+ */
 public class JdbcTemplate<T> {
-   private final DataSource dataSource;
+
    private BiConsumer<? super T, ? super PreparedStatement> updateAction;
    private IdBiConsumer<? super T, ? super PreparedStatement> insertAction;
    private Function<? super ResultSet, ? extends T> mapper;
@@ -30,93 +42,81 @@ public class JdbcTemplate<T> {
       U apply(T t) throws SQLException;
    }
 
-   public JdbcTemplate(DataSource dataSource) {
-      this.dataSource = dataSource;
+   public JdbcTemplate() {
    }
 
-   public JdbcTemplate(DataSource dataSource, BiConsumer<? super T, ? super PreparedStatement> updateAction, IdBiConsumer<? super T, ? super PreparedStatement> insertAction, Function<? super ResultSet, ? extends T> mapper, String seqName) {
-      this.dataSource = dataSource;
+   public JdbcTemplate(BiConsumer<? super T, ? super PreparedStatement> updateAction, IdBiConsumer<? super T, ? super PreparedStatement> insertAction, Function<? super ResultSet, ? extends T> mapper, String seqName) {
       this.updateAction = updateAction;
       this.insertAction = insertAction;
       this.mapper = mapper;
       this.seqName = seqName;
    }
 
-   public T run(String query, T updateObject) {
-      return run(query, updateObject, updateAction);
+   public ContextJdbc<T> run(String query, T updateObject) {
+      return c -> run(c, query, updateObject, updateAction);
    }
 
-   public T select(String query, Consumer<? super PreparedStatement> selectValues) {
-      return select(query, selectValues, mapper);
+   public ContextJdbc<T> run(String query, T updateObject, BiConsumer<? super T, ? super PreparedStatement> updateAction) {
+      return c -> run(c, query, updateObject, updateAction);
+   }
+   public ContextJdbc<T> selectOne(String query, Consumer<? super PreparedStatement> selectValues) {
+      return c -> selectOne(c, query, selectValues, mapper);
+   }
+
+   public ContextJdbc<List<T>> select(String query, Consumer<? super PreparedStatement> selectValues) {
+      return c -> select(c, query, selectValues, mapper);
+   }
+
+   public List<T> select(Connection c, String query, Consumer<? super PreparedStatement> selectValues,
+                         Function<? super ResultSet, ? extends T> mapper)  throws SQLException {
+      try(var ps = c.prepareStatement(query)) {
+         selectValues.accept(ps);
+         var rs = ps.executeQuery();
+         ArrayList<T> result = new ArrayList<>();
+         while(rs.next()) {
+            result.add(mapper.apply(rs));
+         }
+         return result;
+      }
    }
 
    /**
     * вставляет используя секвенс
     */
-   public T insert(String query, T insertObject) {
-      try (var c = dataSource.getConnection()) {
-         return insert(c, query, insertObject);
-      } catch (SQLException e) {
-         throw new RuntimeException(e);
-      }
+   public ContextJdbc<T> insert(String query, T insertObject) {
+      return c -> insert(c, query, insertObject);
    }
 
-   public T run(String query, T updateObject, BiConsumer<? super T, ? super PreparedStatement> mapper) {
-      try (var c = dataSource.getConnection()){
-         return run(c, query, updateObject, mapper);
-      } catch (SQLException e) {
-         throw new RuntimeException(e);
-      }
-   }
-
-   public T select(String query, Consumer<? super PreparedStatement> selectValues, Function<? super ResultSet, ? extends T> mapper) {
-      try (var c = dataSource.getConnection()){
-         return select(c, query, selectValues, mapper);
-      } catch (SQLException e) {
-         throw new RuntimeException(e);
-      }
-   }
-
-   public T insert(Connection c, String query, T insertObject) {
-      try (var call = c.prepareCall("{call nextval(?::regclass)}");
-           var ps = c.prepareStatement(query)) {
+   public T insert(Connection c, String query, T insertObject) throws SQLException {
+      try(var call = c.prepareCall("{call nextval(?::regclass)}");
+          var ps = c.prepareStatement(query)) {
          call.setString(1, seqName);
-         call.registerOutParameter(1, -5);
+         call.registerOutParameter(1, BIGINT);
          call.execute();
          long id = call.getLong(1);
          insertAction.accept(id, insertObject, ps);
          return ps.executeUpdate() > 0 ? insertObject : null;
-      } catch (SQLException e) {
-         throw new RuntimeException(e);
       }
    }
 
    public T run(Connection c, String query, T updateObject,
-                BiConsumer<? super T, ? super PreparedStatement> mapper) {
-      try (var ps = c.prepareStatement(query)) {
+                BiConsumer<? super T, ? super PreparedStatement> mapper)  throws SQLException {
+      try(var ps = c.prepareStatement(query)) {
          mapper.accept(updateObject, ps);
          return ps.executeUpdate() > 0 ? updateObject : null;
-      } catch (SQLException e) {
-         throw new RuntimeException(e);
       }
    }
 
-   public T select(Connection c, String query, Consumer<? super PreparedStatement> selectValues,
-                   Function<? super ResultSet, ? extends T> mapper) {
-      try (var ps = c.prepareStatement(query)) {
+   public T selectOne(Connection c, String query, Consumer<? super PreparedStatement> selectValues,
+                      Function<? super ResultSet, ? extends T> mapper) throws SQLException  {
+      try(var ps = c.prepareStatement(query)) {
          selectValues.accept(ps);
          var rs = ps.executeQuery();
          return rs.next() ? mapper.apply(rs) : null;
-      } catch (SQLException e) {
-         throw new RuntimeException(e);
       }
    }
 
-   public <V> V exec(Function<Connection, ? extends V> action) {
-      try(var c = dataSource.getConnection()) {
-         return action.apply(c);
-      } catch (SQLException e) {
-         throw new RuntimeException(e);
-      }
+   public <V> ContextJdbc<V> exec(Function<Connection, ? extends V> action) {
+         return action::apply;
    }
 }

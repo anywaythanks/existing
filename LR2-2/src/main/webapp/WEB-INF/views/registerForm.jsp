@@ -1,35 +1,25 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://www.springframework.org/tags/form" prefix="sf" %>
 <%@ page session="false" %>
+<%@ page import="com.model.Role" %>
 <html>
 <head>
-    <title>Spittr</title>
+    <title>LR</title>
     <link rel="stylesheet" type="text/css"
           href="<c:url value="/resources/style.css" />">
 </head>
 <body>
 <h1>Register</h1>
-<form method="POST" enctype="multipart/form-data">
-    <sf:errors path="user.*" element="div" cssClass="errors"/>
-    <sf:label path="user.firstName"
-              cssErrorClass="error">First Name</sf:label>:
-    <sf:input path="user.firstName" cssErrorClass="error"/><br/>
-    <sf:label path="user.lastName"
-              cssErrorClass="error">Last Name</sf:label>:
-    <sf:input path="user.lastName" cssErrorClass="error"/><br/>
-    <sf:label path="user.email" type="email"
-              cssErrorClass="error">Email</sf:label>:
-    <sf:input path="user.email" cssErrorClass="error"/><br/>
-    <sf:label path="user.login"
+<form method="POST">
+    <sf:errors path="account.*" element="div" cssClass="errors"/>
+    <sf:label path="account.name"
               cssErrorClass="error">Login</sf:label>:
-    <sf:input path="user.login" cssErrorClass="error"/><br/>
-    <sf:label path="user.password"
+    <sf:input path="account.name" cssErrorClass="error"/><br/>
+    <sf:label path="account.passwd"
               cssErrorClass="error">Password</sf:label>:
-    <sf:password path="user.password" cssErrorClass="error"/><br/>
-    <label>Profile Picture</label>:
-    <input type="file"
-           name="profilePicture"
-           accept="image/jpeg,image/png,image/gif"/><br/>
+    <sf:password path="account.passwd" cssErrorClass="error"/><br/>
+    <sf:radiobuttons path="account.role" items="${Role.ROLE_MAP}" delimiter="<br/>"/><br/>
     <input type="submit" value="Register"/>
 </form>
 </body>

@@ -20,12 +20,4 @@ public class WebAppInitializer extends AbstractAnnotationConfigDispatcherServlet
     protected Class<?>[] getServletConfigClasses() {
         return new Class<?>[]{WebConfig.class};
     }
-
-    @Override
-    protected void customizeRegistration(ServletRegistration.Dynamic registration) {
-        super.customizeRegistration(registration);
-        registration.setMultipartConfig(
-                new MultipartConfigElement("/tmp/uploads",
-                        2097152, 4194304, 0));
-    }
 }
